@@ -53,8 +53,16 @@ body{
 /* ---------- Progress ---------- */
 .progress-row{display:flex; align-items:center; gap:14px; margin-bottom:34px}
 .progress{display:flex; gap:6px; flex:1}
-.progress i{height:4px; flex:1; border-radius:99px; background:#DCE6DE; transition:background .3s}
-.progress i.on{background:var(--leaf)}
+.progress button{
+  flex:1; height:30px; border:1.5px solid var(--line); background:var(--surface); border-radius:99px;
+  font:600 12.5px var(--font-b); color:var(--muted); cursor:pointer;
+  transition:background .2s, border-color .2s, color .2s;
+}
+.progress button:not(:disabled):hover{border-color:var(--leaf)}
+.progress button.on{background:var(--leaf-tint); border-color:var(--leaf-tint); color:var(--leaf-deep)}
+.progress button.current{background:var(--leaf); border-color:var(--leaf); color:#fff}
+.progress button:disabled{opacity:.45; cursor:default}
+.progress button:focus-visible{outline:3px solid rgba(30,122,76,.35); outline-offset:2px}
 .progress-count{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; flex:none}
 
 /* ---------- Steps ---------- */
@@ -281,9 +289,15 @@ body{
   <!-- ==================== WIZARD ==================== -->
   <main id="wizard">
 
-    <div class="progress-row" aria-hidden="true">
-      <div class="progress" id="progress"><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="progress-count" id="progress-count">1 / 5</div>
+    <div class="progress-row">
+      <div class="progress" id="progress" aria-label="Steps">
+        <button type="button" data-goto="1" title="Sex" aria-label="Step 1: Sex">1</button>
+        <button type="button" data-goto="2" title="Body" aria-label="Step 2: Body">2</button>
+        <button type="button" data-goto="3" title="Goal" aria-label="Step 3: Goal">3</button>
+        <button type="button" data-goto="4" title="Activity" aria-label="Step 4: Activity">4</button>
+        <button type="button" data-goto="5" title="Diet" aria-label="Step 5: Diet">5</button>
+      </div>
+      <div class="progress-count" id="progress-count" aria-hidden="true">1 / 5</div>
     </div>
 
     <!-- Step 1: Sex -->
@@ -780,12 +794,19 @@ body{
 
   /* ---------------- Wizard navigation ---------------- */
   const steps = $$('.step');
-  const bars = $$('#progress i');
+  const bars = $$('#progress button');
+  let maxStep = 1;        // highest step reached — later pills stay locked until then
+  let hasResults = false; // once true, edits jump straight back to the results view
 
   function goTo(n) {
     step = n;
+    maxStep = Math.max(maxStep, n);
     steps.forEach(sec => sec.classList.toggle('active', Number(sec.dataset.step) === n));
-    bars.forEach((b, i) => b.classList.toggle('on', i < n));
+    bars.forEach((b, i) => {
+      b.classList.toggle('on', i + 1 < n);
+      b.classList.toggle('current', i + 1 === n);
+      b.disabled = i + 1 > maxStep;
+    });
     $('#progress-count').textContent = `${n} / ${TOTAL}`;
     window.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
     const h = $('#h-step' + n);
@@ -798,17 +819,26 @@ body{
     });
   }
 
-  // Steps 1/3/4 — auto-advance on selection. `change` covers new picks; `click`
-  // re-advances when the already-checked option is clicked again, since no change
-  // event fires then (the "Edit details, keep my answer" path).
+  // Step pills: jump straight to any unlocked step
+  bars.forEach(b => b.addEventListener('click', () => {
+    const n = Number(b.dataset.goto);
+    if (step === 2 && n > 2 && !validStep2()) return; // don't leave step 2 with invalid fields
+    goTo(n);
+  }));
+
+  // Steps 1/3/4 — auto-advance on selection; once results exist, any selection
+  // jumps straight back to results instead of walking the remaining steps.
+  // `change` covers new picks; `click` covers re-picking the already-checked
+  // option, since no change event fires then.
   const autoAdvance = (name, next) => $$(`input[name="${name}"]`).forEach(inp => {
+    const done = () => setTimeout(() => hasResults ? showResults() : goTo(next), 240);
     inp.addEventListener('change', () => {
       state[name] = inp.value;
       syncSelected(name);
-      setTimeout(() => goTo(next), 240);
+      done();
     });
     inp.addEventListener('click', () => {
-      if (state[name] === inp.value) setTimeout(() => goTo(next), 240);
+      if (state[name] === inp.value) done();
     });
   });
   autoAdvance('gender', 2); // step 1 — sex
@@ -824,13 +854,17 @@ body{
     return ok ? v : null;
   }
 
-  function tryStep2() {
+  function validStep2() {
     const age = readField('age', 15, 90);
     const height = readField('height', 130, 230);
     const weight = readField('weight', 35, 250);
-    if (age === null || height === null || weight === null) return;
+    if (age === null || height === null || weight === null) return false;
     Object.assign(state, { age, height, weight });
-    goTo(3);
+    return true;
+  }
+  function tryStep2() {
+    if (!validStep2()) return;
+    if (hasResults) showResults(); else goTo(3);
   }
   $('#next-2').addEventListener('click', tryStep2);
   ['age', 'height', 'weight'].forEach(id => {
@@ -843,12 +877,16 @@ body{
 
   autoAdvance('activity', 5); // step 4 — activity
 
-  // Step 5 — diet: enable the Calculate button
+  // Step 5 — diet: enable Calculate; when editing, jump straight back to results
   $$('input[name="diet"]').forEach(inp => {
     inp.addEventListener('change', () => {
       state.diet = inp.value;
       syncSelected('diet');
       $('#calc-btn').disabled = false;
+      if (hasResults) setTimeout(showResults, 240);
+    });
+    inp.addEventListener('click', () => {
+      if (hasResults && state.diet === inp.value) setTimeout(showResults, 240);
     });
   });
 
@@ -1010,6 +1048,7 @@ body{
 
   /* ---------------- Show results ---------------- */
   function showResults() {
+    hasResults = true;
     const r = calculate(state);
     const pP = r.protein.kcal / r.calories;
     const pF = r.fat.kcal / r.calories;
