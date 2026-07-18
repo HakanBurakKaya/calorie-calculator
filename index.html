@@ -774,14 +774,20 @@ body{
     });
   }
 
-  // Step 1 — sex: auto-advance on selection
-  $$('input[name="gender"]').forEach(inp => {
+  // Steps 1/3/4 — auto-advance on selection. `change` covers new picks; `click`
+  // re-advances when the already-checked option is clicked again, since no change
+  // event fires then (the "Edit details, keep my answer" path).
+  const autoAdvance = (name, next) => $$(`input[name="${name}"]`).forEach(inp => {
     inp.addEventListener('change', () => {
-      state.gender = inp.value;
-      syncSelected('gender');
-      setTimeout(() => goTo(2), 240);
+      state[name] = inp.value;
+      syncSelected(name);
+      setTimeout(() => goTo(next), 240);
+    });
+    inp.addEventListener('click', () => {
+      if (state[name] === inp.value) setTimeout(() => goTo(next), 240);
     });
   });
+  autoAdvance('gender', 2); // step 1 — sex
 
   // Step 2 — numeric fields
   function readField(id, min, max) {
@@ -809,23 +815,9 @@ body{
     });
   });
 
-  // Step 3 — goal: auto-advance on selection
-  $$('input[name="goal"]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      state.goal = inp.value;
-      syncSelected('goal');
-      setTimeout(() => goTo(4), 240);
-    });
-  });
+  autoAdvance('goal', 4); // step 3 — goal
 
-  // Step 4 — activity: auto-advance on selection
-  $$('input[name="activity"]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      state.activity = inp.value;
-      syncSelected('activity');
-      setTimeout(() => goTo(5), 240);
-    });
-  });
+  autoAdvance('activity', 5); // step 4 — activity
 
   // Step 5 — diet: enable the Calculate button
   $$('input[name="diet"]').forEach(inp => {
