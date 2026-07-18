@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F3F7F4">
+<meta name="description" content="Daily calorie, macro, fiber and water targets from the Mifflin-St Jeor equation.">
+<title>Balance · Daily Calorie &amp; Macro Calculator</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;family=Instrument+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F7F4;
+  --surface:#FFFFFF;
+  --ink:#152219;
+  --muted:#5C6C61;
+  --line:#E2EAE3;
+  --line-strong:#CFDBD2;
+  --leaf:#1E7A4C;
+  --leaf-deep:#155F3B;
+  --leaf-tint:#EAF5EE;
+  --amber:#D89A3D;
+  --slate:#4C7EA8;
+  --moss:#6E8A46;
+  --aqua:#2E9FBF;
+  --danger:#BE4B36;
+  --r-md:16px; --r-lg:20px;
+  --shadow:0 1px 2px rgba(21,34,25,.05), 0 10px 30px rgba(21,34,25,.07);
+  --font-d:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-b:'Instrument Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--font-b); font-size:16px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; min-height:100dvh;
+}
+[hidden]{display:none !important}
+.app{max-width:640px; margin:0 auto; padding:clamp(20px,5vw,44px) clamp(18px,5vw,28px) 72px}
+
+/* ---------- Brand ---------- */
+.brand{display:flex; align-items:center; gap:12px; margin-bottom:38px}
+.logo{width:42px; height:42px; border-radius:13px; background:var(--leaf-tint); color:var(--leaf); display:grid; place-items:center; flex:none}
+.brand-name{font-family:var(--font-d); font-weight:700; font-size:19px; letter-spacing:-.01em}
+.brand-sub{font-size:13px; color:var(--muted)}
+
+/* ---------- Progress ---------- */
+.progress-row{display:flex; align-items:center; gap:14px; margin-bottom:34px}
+.progress{display:flex; gap:6px; flex:1}
+.progress i{height:4px; flex:1; border-radius:99px; background:#DCE6DE; transition:background .3s}
+.progress i.on{background:var(--leaf)}
+.progress-count{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; flex:none}
+
+/* ---------- Steps ---------- */
+.step{display:none}
+.step.active{display:block; animation:stepIn .35s ease both}
+@keyframes stepIn{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+.q{font-family:var(--font-d); font-weight:600; font-size:clamp(24px,6vw,30px); letter-spacing:-.02em; margin:0 0 6px; outline:none}
+.hint{color:var(--muted); margin:0 0 26px; font-size:15px}
+
+.options{display:grid; gap:12px}
+.options-2{grid-template-columns:1fr 1fr}
+@media (max-width:420px){.options-2{grid-template-columns:1fr}}
+.option{
+  position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+  background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r-lg);
+  padding:20px; cursor:pointer; transition:border-color .2s, box-shadow .2s, background .2s;
+}
+.option input{position:absolute; opacity:0; pointer-events:none}
+.option:hover{border-color:var(--line-strong)}
+.option.selected{border-color:var(--leaf); background:var(--leaf-tint); box-shadow:0 0 0 3px rgba(30,122,76,.14)}
+.option:focus-within{outline:3px solid rgba(30,122,76,.30); outline-offset:2px}
+.option-icon{width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:var(--leaf-tint); color:var(--leaf); flex:none}
+.option.selected .option-icon{background:var(--surface)}
+.option-title{font-weight:600; font-size:16px}
+.option-desc{font-size:13px; color:var(--muted); margin-top:2px}
+
+.option-row{flex-direction:row; align-items:center; justify-content:space-between; gap:16px; padding:16px 18px}
+.option-row .row-text{display:flex; flex-direction:column; gap:2px}
+.option-row .option-title{font-size:15px}
+.badge{
+  font-size:12px; font-weight:600; color:var(--leaf-deep); background:#EDF3EE;
+  border-radius:99px; padding:4px 10px; font-variant-numeric:tabular-nums; white-space:nowrap; flex:none;
+}
+.option.selected .badge{background:var(--surface)}
+
+/* ---------- Form fields ---------- */
+.fields{display:grid; gap:18px}
+.field label{display:block; font-size:14px; font-weight:600; margin-bottom:8px}
+.input-wrap{position:relative}
+.input-wrap input{
+  width:100%; background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r-md);
+  padding:14px 58px 14px 16px; font:500 17px var(--font-b); color:var(--ink);
+  transition:border-color .2s, box-shadow .2s; appearance:textfield; -moz-appearance:textfield;
+}
+.input-wrap input::-webkit-outer-spin-button,
+.input-wrap input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.input-wrap input:focus{outline:none; border-color:var(--leaf); box-shadow:0 0 0 3px rgba(30,122,76,.14)}
+.input-wrap .unit{position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--muted); pointer-events:none}
+.field.invalid input{border-color:var(--danger); box-shadow:0 0 0 3px rgba(190,75,54,.12)}
+.error{color:var(--danger); font-size:13px; margin:8px 0 0}
+
+/* ---------- Buttons ---------- */
+.nav{display:flex; justify-content:space-between; align-items:center; margin-top:30px; gap:12px}
+.btn{
+  border:0; cursor:pointer; font:600 15px var(--font-b); border-radius:99px; padding:14px 28px;
+  transition:background .2s, color .2s, transform .05s; display:inline-flex; align-items:center; gap:8px;
+}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:3px solid rgba(30,122,76,.35); outline-offset:2px}
+.btn.primary{background:var(--leaf); color:#fff}
+.btn.primary:hover{background:var(--leaf-deep)}
+.btn.primary:disabled{background:#BFD3C6; cursor:not-allowed; transform:none}
+.btn.ghost{background:transparent; color:var(--muted); padding:14px 12px}
+.btn.ghost:hover{color:var(--ink)}
+.btn.link{background:transparent; color:var(--leaf-deep)}
+.btn.link:hover{background:var(--leaf-tint)}
+
+/* ---------- Results ---------- */
+.results-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:4px}
+.eyebrow{font-size:11px; font-weight:600; letter-spacing:.14em; color:var(--leaf-deep); margin:0 0 8px; text-transform:uppercase}
+#results h1{font-family:var(--font-d); font-weight:600; font-size:clamp(23px,6vw,28px); letter-spacing:-.02em; margin:0 0 6px; outline:none}
+.summary{margin:0; color:var(--muted); font-size:13.5px}
+.icon-btn{
+  width:42px; height:42px; border-radius:13px; border:1.5px solid var(--line); background:var(--surface);
+  color:var(--muted); display:grid; place-items:center; cursor:pointer; flex:none;
+  transition:color .2s, border-color .2s;
+}
+.icon-btn:hover{color:var(--leaf); border-color:var(--leaf)}
+.icon-btn:focus-visible{outline:3px solid rgba(30,122,76,.35); outline-offset:2px}
+
+.ring-wrap{position:relative; width:min(300px,80vw); margin:28px auto 8px}
+.ring-wrap svg{display:block; width:100%; height:auto}
+.ring-center{position:absolute; inset:0; display:grid; place-content:center; text-align:center}
+.kcal{font-family:var(--font-d); font-weight:700; font-size:clamp(44px,13vw,60px); letter-spacing:-.03em; line-height:1; font-variant-numeric:tabular-nums}
+.kcal-label{color:var(--muted); font-size:14px; margin-top:8px}
+.meta-line{text-align:center; color:var(--muted); font-size:13.5px; margin:8px 0 30px; font-variant-numeric:tabular-nums}
+
+.lowcal-note{
+  background:#FDF3E7; border:1px solid #F2DFC2; color:#7C5A22;
+  font-size:13.5px; border-radius:var(--r-md); padding:12px 16px; margin:0 0 22px;
+}
+
+.card{background:var(--surface); border-radius:var(--r-lg); padding:18px; box-shadow:var(--shadow)}
+.macro-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+@media (max-width:520px){.macro-grid{grid-template-columns:1fr}}
+.macro-name{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--muted)}
+.dot{width:10px; height:10px; border-radius:50%; background:var(--c,var(--leaf)); flex:none}
+.macro-amount{font-family:var(--font-d); font-weight:600; font-size:27px; letter-spacing:-.02em; margin:10px 0 3px; font-variant-numeric:tabular-nums}
+.macro-sub{font-size:12.5px; color:var(--muted)}
+.duo-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+@media (max-width:420px){.duo-grid{grid-template-columns:1fr}}
+
+.actions{display:flex; justify-content:center; gap:10px; margin-top:32px; flex-wrap:wrap}
+.disclaimer{color:var(--muted); font-size:12.5px; text-align:center; margin-top:26px; line-height:1.6}
+
+/* Results entrance animation */
+@keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+#results.enter .ring-wrap{animation:rise .55s ease both}
+#results.enter .meta-line{animation:rise .5s .1s ease both}
+#results.enter .macro-grid .card:nth-child(1){animation:rise .5s .16s ease both}
+#results.enter .macro-grid .card:nth-child(2){animation:rise .5s .26s ease both}
+#results.enter .macro-grid .card:nth-child(3){animation:rise .5s .36s ease both}
+#results.enter .duo-grid .card:nth-child(1){animation:rise .5s .46s ease both}
+#results.enter .duo-grid .card:nth-child(2){animation:rise .5s .54s ease both}
+
+/* ---------- References (bottom sheet / modal) ---------- */
+.backdrop{
+  position:fixed; inset:0; background:rgba(16,25,20,.42); backdrop-filter:blur(3px);
+  opacity:0; transition:opacity .25s; z-index:40;
+}
+.backdrop.show{opacity:1}
+.sheet{
+  position:fixed; z-index:50; left:50%; bottom:0; transform:translate(-50%,10%); opacity:0;
+  width:min(680px,100%); max-height:min(84dvh,760px); overflow:auto; overscroll-behavior:contain;
+  background:var(--surface); border-radius:24px 24px 0 0;
+  box-shadow:0 -12px 44px rgba(21,34,25,.18);
+  padding:0 clamp(18px,4vw,30px) 30px;
+  transition:transform .32s cubic-bezier(.22,.9,.3,1), opacity .32s;
+}
+.sheet.show{transform:translate(-50%,0); opacity:1}
+@media (min-width:720px){
+  .sheet{bottom:auto; top:50%; transform:translate(-50%,-46%) scale(.97); border-radius:24px}
+  .sheet.show{transform:translate(-50%,-50%) scale(1)}
+}
+.sheet-head{
+  position:sticky; top:0; background:var(--surface); z-index:1;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:22px 0 14px; border-bottom:1px solid var(--line);
+}
+.sheet-head h2{font-family:var(--font-d); font-size:20px; font-weight:600; margin:0; letter-spacing:-.01em}
+.sheet-intro{color:var(--muted); font-size:14px; margin:16px 0 2px}
+.refs{list-style:none; margin:0; padding:0}
+.refs li{padding:18px 0; border-bottom:1px solid var(--line)}
+.refs li:last-child{border-bottom:0}
+.chip{
+  display:inline-block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--leaf-deep); background:var(--leaf-tint); border-radius:99px; padding:4px 10px; margin-bottom:9px;
+}
+.apa{margin:0 0 9px; font-size:14px; line-height:1.65}
+.ref-link{
+  color:var(--leaf); font-size:13.5px; font-weight:600; text-decoration:none;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.ref-link:hover{text-decoration:underline}
+.sheet-note{color:var(--muted); font-size:12.5px; margin-top:18px; line-height:1.6}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important; transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Brand -->
+  <header class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.5 3.5C11 4 4 11 3.5 20.5 13 20 20 13 20.5 3.5Z"/>
+        <path d="M6.5 17.5C9.5 13 13 9.5 17.5 6.5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">Balance</div>
+      <div class="brand-sub">Your daily nutrition targets, backed by science</div>
+    </div>
+  </header>
+
+  <!-- ==================== WIZARD ==================== -->
+  <main id="wizard">
+
+    <div class="progress-row" aria-hidden="true">
+      <div class="progress" id="progress"><i></i><i></i><i></i><i></i></div>
+      <div class="progress-count" id="progress-count">1 / 4</div>
+    </div>
+
+    <!-- Step 1: Sex -->
+    <section class="step active" data-step="1" aria-labelledby="h-step1">
+      <h1 class="q" id="h-step1" tabindex="-1">What's your biological sex?</h1>
+      <p class="hint">The Mifflin-St Jeor equation uses different constants for each sex.</p>
+      <div class="options options-2" role="radiogroup" aria-label="Biological sex">
+        <label class="option">
+          <input type="radio" name="gender" value="female">
+          <span class="option-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="8" r="5"/><line x1="12" y1="13" x2="12" y2="21"/><line x1="9" y1="17.5" x2="15" y2="17.5"/>
+            </svg>
+          </span>
+          <span><span class="option-title">Female</span></span>
+        </label>
+        <label class="option">
+          <input type="radio" name="gender" value="male">
+          <span class="option-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10" cy="14" r="5"/><line x1="13.6" y1="10.4" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/>
+            </svg>
+          </span>
+          <span><span class="option-title">Male</span></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Step 2: Age / Height / Weight -->
+    <section class="step" data-step="2" aria-labelledby="h-step2">
+      <h1 class="q" id="h-step2" tabindex="-1">Tell us about yourself</h1>
+      <p class="hint">Your age, height and weight determine your basal metabolic rate (BMR).</p>
+      <div class="fields">
+        <div class="field" id="f-age">
+          <label for="age">Age</label>
+          <div class="input-wrap">
+            <input id="age" type="number" inputmode="numeric" min="15" max="90" step="1" placeholder="28">
+            <span class="unit">yrs</span>
+          </div>
+          <p class="error" id="err-age" hidden>Enter a value between 15 and 90.</p>
+        </div>
+        <div class="field" id="f-height">
+          <label for="height">Height</label>
+          <div class="input-wrap">
+            <input id="height" type="number" inputmode="numeric" min="130" max="230" step="1" placeholder="172">
+            <span class="unit">cm</span>
+          </div>
+          <p class="error" id="err-height" hidden>Enter a value between 130 and 230 cm.</p>
+        </div>
+        <div class="field" id="f-weight">
+          <label for="weight">Weight</label>
+          <div class="input-wrap">
+            <input id="weight" type="number" inputmode="decimal" min="35" max="250" step="0.1" placeholder="70">
+            <span class="unit">kg</span>
+          </div>
+          <p class="error" id="err-weight" hidden>Enter a value between 35 and 250 kg.</p>
+        </div>
+      </div>
+      <div class="nav">
+        <button type="button" class="btn ghost" data-back>Back</button>
+        <button type="button" class="btn primary" id="next-2">Continue</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Goal -->
+    <section class="step" data-step="3" aria-labelledby="h-step3">
+      <h1 class="q" id="h-step3" tabindex="-1">What's your goal?</h1>
+      <p class="hint">Your daily calories are adjusted to match this goal.</p>
+      <div class="options" role="radiogroup" aria-label="Goal">
+        <label class="option option-row">
+          <input type="radio" name="goal" value="lose">
+          <span class="option-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+            </svg>
+          </span>
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Lose weight</span>
+            <span class="option-desc">A controlled energy deficit for fat loss</span>
+          </span>
+          <span class="badge">−15–20%</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="goal" value="maintain">
+          <span class="option-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <line x1="5" y1="9.5" x2="19" y2="9.5"/><line x1="5" y1="14.5" x2="19" y2="14.5"/>
+            </svg>
+          </span>
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Maintain weight</span>
+            <span class="option-desc">Eat as much energy as you burn</span>
+          </span>
+          <span class="badge">±0%</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="goal" value="gain">
+          <span class="option-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </span>
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Build muscle</span>
+            <span class="option-desc">A controlled energy surplus for muscle growth</span>
+          </span>
+          <span class="badge">+10–15%</span>
+        </label>
+      </div>
+      <div class="nav">
+        <button type="button" class="btn ghost" data-back>Back</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Activity level -->
+    <section class="step" data-step="4" aria-labelledby="h-step4">
+      <h1 class="q" id="h-step4" tabindex="-1">How active are you?</h1>
+      <p class="hint">Your choice sets the TDEE multiplier and affects protein and water needs.</p>
+      <div class="options" role="radiogroup" aria-label="Activity level">
+        <label class="option option-row">
+          <input type="radio" name="activity" value="sedentary">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Sedentary</span>
+            <span class="option-desc">No exercise, desk job</span>
+          </span>
+          <span class="badge">×1.2</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="activity" value="light">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Lightly active</span>
+            <span class="option-desc">Light exercise or walking 1–3 days a week</span>
+          </span>
+          <span class="badge">×1.375</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="activity" value="moderate">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Moderately active</span>
+            <span class="option-desc">Moderate training 3–5 days a week</span>
+          </span>
+          <span class="badge">×1.55</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="activity" value="very">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Very active</span>
+            <span class="option-desc">Hard training 6–7 days a week</span>
+          </span>
+          <span class="badge">×1.725</span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="activity" value="extreme">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Extremely active</span>
+            <span class="option-desc">Twice-daily training or heavy physical work</span>
+          </span>
+          <span class="badge">×1.9</span>
+        </label>
+      </div>
+      <div class="nav">
+        <button type="button" class="btn ghost" data-back>Back</button>
+        <button type="button" class="btn primary" id="calc-btn" disabled>Calculate</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== RESULTS ==================== -->
+  <section id="results" hidden aria-labelledby="h-results">
+
+    <div class="results-head">
+      <div>
+        <p class="eyebrow">Results</p>
+        <h1 id="h-results" tabindex="-1">Your daily targets</h1>
+        <p class="summary" id="summary-line"></p>
+      </div>
+      <button type="button" class="icon-btn" id="open-refs" aria-label="Open scientific references" title="Scientific references">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Calorie ring (segments = macro split) -->
+    <div class="ring-wrap">
+      <svg viewBox="0 0 220 220" role="img" id="ring-svg" aria-label="">
+        <circle cx="110" cy="110" r="96" fill="none" stroke="#E4EDE6" stroke-width="18"/>
+        <g transform="rotate(-90 110 110)">
+          <circle id="seg-protein" cx="110" cy="110" r="96" fill="none" stroke="var(--leaf)"  stroke-width="18"/>
+          <circle id="seg-fat"     cx="110" cy="110" r="96" fill="none" stroke="var(--amber)" stroke-width="18"/>
+          <circle id="seg-carb"    cx="110" cy="110" r="96" fill="none" stroke="var(--slate)" stroke-width="18"/>
+        </g>
+      </svg>
+      <div class="ring-center">
+        <div class="kcal" id="kcal-value">0</div>
+        <div class="kcal-label">kcal / day</div>
+      </div>
+    </div>
+
+    <p class="meta-line" id="meta-line"></p>
+
+    <p class="lowcal-note" id="lowcal-note" hidden>
+      Note: your calculated calories are near or below the commonly accepted minimum for
+      long-term use. In cases like this, it's a good idea to consult a physician or dietitian.
+    </p>
+
+    <!-- Macro cards -->
+    <div class="macro-grid">
+      <article class="card" style="--c:var(--leaf)">
+        <div class="macro-name"><span class="dot"></span>Protein</div>
+        <div class="macro-amount" id="protein-g">–</div>
+        <div class="macro-sub" id="protein-sub"></div>
+      </article>
+      <article class="card" style="--c:var(--amber)">
+        <div class="macro-name"><span class="dot"></span>Fat</div>
+        <div class="macro-amount" id="fat-g">–</div>
+        <div class="macro-sub" id="fat-sub"></div>
+      </article>
+      <article class="card" style="--c:var(--slate)">
+        <div class="macro-name"><span class="dot"></span>Carbs</div>
+        <div class="macro-amount" id="carb-g">–</div>
+        <div class="macro-sub" id="carb-sub"></div>
+      </article>
+    </div>
+
+    <!-- Fiber & water -->
+    <div class="duo-grid">
+      <article class="card" style="--c:var(--moss)">
+        <div class="macro-name"><span class="dot"></span>Fiber</div>
+        <div class="macro-amount" id="fiber-g">–</div>
+        <div class="macro-sub">14 g per 1,000 kcal</div>
+      </article>
+      <article class="card" style="--c:var(--aqua)">
+        <div class="macro-name"><span class="dot"></span>Water</div>
+        <div class="macro-amount" id="water-l">–</div>
+        <div class="macro-sub" id="water-sub"></div>
+      </article>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn ghost" id="edit-btn">Edit details</button>
+      <button type="button" class="btn link" id="open-refs-2">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/>
+        </svg>
+        Scientific references
+      </button>
+    </div>
+
+    <p class="disclaimer">
+      These values are estimates based on scientific equations developed for healthy adults;
+      they are not a substitute for medical or dietetic advice.
+    </p>
+  </section>
+</div>
+
+<!-- ==================== REFERENCES ==================== -->
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="refs-modal" role="dialog" aria-modal="true" aria-labelledby="refs-title" hidden>
+  <div class="sheet-head">
+    <h2 id="refs-title">Scientific references</h2>
+    <button type="button" class="icon-btn" id="close-refs" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <p class="sheet-intro">Every calculation running behind the scenes is based on the following research and official reports:</p>
+  <ol class="refs">
+    <li>
+      <span class="chip">BMR equation</span>
+      <p class="apa">Mifflin, M. D., St Jeor, S. T., Hill, L. A., Scott, B. J., Daugherty, S. A., &amp; Koh, Y. O. (1990). A new predictive equation for resting energy expenditure in healthy individuals. <em>The American Journal of Clinical Nutrition, 51</em>(2), 241–247.</p>
+      <a class="ref-link" href="https://doi.org/10.1093/ajcn/51.2.241" target="_blank" rel="noopener noreferrer">doi.org/10.1093/ajcn/51.2.241 ↗</a>
+    </li>
+    <li>
+      <span class="chip">Protein (g/kg)</span>
+      <p class="apa">Jäger, R., Kerksick, C. M., Campbell, B. I., Cribb, P. J., Wells, S. D., Skwiat, T. M., ... &amp; Antonio, J. (2017). International Society of Sports Nutrition Position Stand: protein and exercise. <em>Journal of the International Society of Sports Nutrition, 14</em>(1), 20.</p>
+      <a class="ref-link" href="https://doi.org/10.1186/s12970-017-0177-8" target="_blank" rel="noopener noreferrer">doi.org/10.1186/s12970-017-0177-8 ↗</a>
+    </li>
+    <li>
+      <span class="chip">Activity multipliers (TDEE)</span>
+      <p class="apa">Food and Agriculture Organization of the United Nations, World Health Organization, &amp; United Nations University. (2004). <em>Human energy requirements: Report of a Joint FAO/WHO/UNU Expert Consultation</em> (FAO Food and Nutrition Technical Report Series No. 1). FAO.</p>
+      <a class="ref-link" href="https://www.fao.org/3/y5686e/y5686e00.htm" target="_blank" rel="noopener noreferrer">fao.org/3/y5686e ↗</a>
+    </li>
+    <li>
+      <span class="chip">Fat share &amp; fiber</span>
+      <p class="apa">Institute of Medicine. (2005). <em>Dietary Reference Intakes for energy, carbohydrate, fiber, fat, fatty acids, cholesterol, protein, and amino acids</em>. The National Academies Press.</p>
+      <a class="ref-link" href="https://doi.org/10.17226/10490" target="_blank" rel="noopener noreferrer">doi.org/10.17226/10490 ↗</a>
+    </li>
+    <li>
+      <span class="chip">Water needs</span>
+      <p class="apa">EFSA Panel on Dietetic Products, Nutrition and Allergies (NDA). (2010). Scientific Opinion on Dietary Reference Values for water. <em>EFSA Journal, 8</em>(3), 1459.</p>
+      <a class="ref-link" href="https://doi.org/10.2903/j.efsa.2010.1459" target="_blank" rel="noopener noreferrer">doi.org/10.2903/j.efsa.2010.1459 ↗</a>
+    </li>
+    <li>
+      <span class="chip">Calorie deficit</span>
+      <p class="apa">Helms, E. R., Aragon, A. A., &amp; Fitschen, P. J. (2014). Evidence-based recommendations for natural bodybuilding contest preparation: Nutrition and supplementation. <em>Journal of the International Society of Sports Nutrition, 11</em>(1), 20.</p>
+      <a class="ref-link" href="https://doi.org/10.1186/1550-2783-11-20" target="_blank" rel="noopener noreferrer">doi.org/10.1186/1550-2783-11-20 ↗</a>
+    </li>
+    <li>
+      <span class="chip">Calorie surplus</span>
+      <p class="apa">Iraki, J., Fitschen, P., Espinar, S., &amp; Helms, E. (2019). Nutrition recommendations for bodybuilders in the off-season: A narrative review. <em>Sports, 7</em>(7), 154.</p>
+      <a class="ref-link" href="https://doi.org/10.3390/sports7070154" target="_blank" rel="noopener noreferrer">doi.org/10.3390/sports7070154 ↗</a>
+    </li>
+  </ol>
+  <p class="sheet-note">
+    These calculations apply to healthy adult populations. If you are pregnant, have a chronic
+    condition or special dietary needs, consult a health professional.
+  </p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- Data: activity levels ---------------- */
+  const ACTIVITY = {
+    sedentary: { factor: 1.2,   water: 30, deficit: 0.15,  surplus: 0.10,  protein: 1.5, label: 'Sedentary' },
+    light:     { factor: 1.375, water: 33, deficit: 0.15,  surplus: 0.10,  protein: 1.6, label: 'Lightly active' },
+    moderate:  { factor: 1.55,  water: 35, deficit: 0.175, surplus: 0.125, protein: 1.7, label: 'Moderately active' },
+    very:      { factor: 1.725, water: 38, deficit: 0.20,  surplus: 0.15,  protein: 1.8, label: 'Very active' },
+    extreme:   { factor: 1.9,   water: 40, deficit: 0.20,  surplus: 0.15,  protein: 1.9, label: 'Extremely active' }
+  };
+  const GOAL_LABEL = { lose: 'Lose weight', maintain: 'Maintain weight', gain: 'Build muscle' };
+
+  const state = { gender: null, age: null, height: null, weight: null, goal: null, activity: null };
+  const TOTAL = 4;
+  let step = 1;
+
+  /* ---------------- Formatting (en-US) ---------------- */
+  const fmtInt = n => Math.round(n).toLocaleString('en-US');
+  const fmt1 = n => n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmtPct = x => (x * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }); // 0.175 -> "17.5"
+
+  /* ---------------- Calculation logic ---------------- */
+  function calculate(s) {
+    const a = ACTIVITY[s.activity];
+
+    // 1) BMR — Mifflin-St Jeor (1990)
+    const bmr = 10 * s.weight + 6.25 * s.height - 5 * s.age + (s.gender === 'male' ? 5 : -161);
+
+    // 2) TDEE — activity multiplier
+    const tdee = bmr * a.factor;
+
+    // 3) Goal adjustment — 15–20% deficit to lose, 10–15% surplus to gain
+    const adj = s.goal === 'lose' ? -a.deficit : s.goal === 'gain' ? a.surplus : 0;
+    const calories = tdee * (1 + adj);
+
+    // 4) Protein — 1.5–2.2 g/kg (by activity + goal)
+    const bump = s.goal === 'lose' ? 0.2 : s.goal === 'gain' ? 0.3 : 0;
+    const perKg = Math.min(2.2, a.protein + bump);
+    const proteinG = perKg * s.weight;
+
+    // 5) Fat — 25–30% of total calories
+    const fatShare = s.goal === 'lose' ? 0.30 : s.goal === 'gain' ? 0.25 : 0.275;
+    const fatG = calories * fatShare / 9;
+
+    // 6) Carbs — remaining calories
+    const carbG = Math.max(0, (calories - proteinG * 4 - fatG * 9) / 4);
+
+    // 7) Fiber — 14 g per 1,000 kcal
+    const fiberG = calories / 1000 * 14;
+
+    // 8) Water — 30–40 ml/kg (by activity)
+    const waterMl = s.weight * a.water;
+
+    return {
+      bmr, tdee, calories, adj, perKg,
+      protein: { g: proteinG, kcal: proteinG * 4 },
+      fat:     { g: fatG,     kcal: fatG * 9 },
+      carb:    { g: carbG,    kcal: carbG * 4 },
+      fiberG, waterMl, waterPerKg: a.water
+    };
+  }
+
+  // ponytail: inline self-check — logs a console error if the math ever regresses
+  console.assert(
+    Math.round(calculate({ gender: 'male', age: 30, height: 180, weight: 80, goal: 'maintain', activity: 'sedentary' }).tdee) === 2136,
+    'calculate() self-check failed'
+  );
+
+  /* ---------------- Wizard navigation ---------------- */
+  const steps = $$('.step');
+  const bars = $$('#progress i');
+
+  function goTo(n) {
+    step = n;
+    steps.forEach(sec => sec.classList.toggle('active', Number(sec.dataset.step) === n));
+    bars.forEach((b, i) => b.classList.toggle('on', i < n));
+    $('#progress-count').textContent = `${n} / ${TOTAL}`;
+    window.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
+    const h = $('#h-step' + n);
+    if (h) h.focus({ preventScroll: true });
+  }
+
+  function syncSelected(name) {
+    $$(`input[name="${name}"]`).forEach(inp => {
+      inp.closest('.option').classList.toggle('selected', inp.checked);
+    });
+  }
+
+  // Step 1 — sex: auto-advance on selection
+  $$('input[name="gender"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      state.gender = inp.value;
+      syncSelected('gender');
+      setTimeout(() => goTo(2), 240);
+    });
+  });
+
+  // Step 2 — numeric fields
+  function readField(id, min, max) {
+    const input = $('#' + id);
+    const v = parseFloat(input.value.replace(',', '.'));
+    const ok = isFinite(v) && v >= min && v <= max;
+    $('#f-' + id).classList.toggle('invalid', !ok);
+    $('#err-' + id).hidden = ok;
+    input.setAttribute('aria-invalid', ok ? 'false' : 'true');
+    return ok ? v : null;
+  }
+
+  function tryStep2() {
+    const age = readField('age', 15, 90);
+    const height = readField('height', 130, 230);
+    const weight = readField('weight', 35, 250);
+    if (age === null || height === null || weight === null) return;
+    Object.assign(state, { age, height, weight });
+    goTo(3);
+  }
+  $('#next-2').addEventListener('click', tryStep2);
+  ['age', 'height', 'weight'].forEach(id => {
+    $('#' + id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); tryStep2(); }
+    });
+  });
+
+  // Step 3 — goal: auto-advance on selection
+  $$('input[name="goal"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      state.goal = inp.value;
+      syncSelected('goal');
+      setTimeout(() => goTo(4), 240);
+    });
+  });
+
+  // Step 4 — activity: enable the Calculate button
+  $$('input[name="activity"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      state.activity = inp.value;
+      syncSelected('activity');
+      $('#calc-btn').disabled = false;
+    });
+  });
+
+  // Back buttons
+  $$('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => goTo(Math.max(1, step - 1)));
+  });
+
+  /* ---------------- Ring (SVG segments) ---------------- */
+  const R = 96, C = 2 * Math.PI * R, GAP = 7;
+
+  function renderRing(fracs) {
+    // fracs: [{el, frac}] — order: protein, fat, carbs
+    let acc = 0;
+    const targets = fracs.map(f => {
+      const len = Math.max(0, f.frac * C - GAP);
+      const off = -(acc * C + GAP / 2);
+      acc += f.frac;
+      return { el: f.el, len, off };
+    });
+    targets.forEach(t => {
+      t.el.style.transition = 'none';
+      t.el.style.strokeDasharray = '0 ' + C;
+      t.el.style.strokeDashoffset = t.off;
+    });
+    if (RM) {
+      targets.forEach(t => { t.el.style.strokeDasharray = `${t.len} ${C - t.len}`; });
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        targets.forEach((t, i) => {
+          t.el.style.transition = `stroke-dasharray .9s cubic-bezier(.22,.9,.3,1) ${i * 0.14}s`;
+          t.el.style.strokeDasharray = `${t.len} ${C - t.len}`;
+        });
+      });
+    });
+  }
+
+  function countUp(el, target, dur = 1000) {
+    if (RM) { el.textContent = fmtInt(target); return; }
+    const start = performance.now();
+    const tick = t => {
+      const p = Math.min(1, (t - start) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmtInt(target * e);
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------------- Show results ---------------- */
+  function showResults() {
+    const r = calculate(state);
+    const pP = r.protein.kcal / r.calories;
+    const pF = r.fat.kcal / r.calories;
+    const pC = r.carb.kcal / r.calories;
+
+    // Summary line
+    $('#summary-line').textContent = [
+      state.gender === 'male' ? 'Male' : 'Female',
+      `${state.age} yrs`,
+      `${state.height} cm`,
+      `${state.weight.toLocaleString('en-US')} kg`,
+      ACTIVITY[state.activity].label,
+      GOAL_LABEL[state.goal]
+    ].join(' · ');
+
+    // Meta line: BMR · TDEE · goal adjustment
+    const adjText = state.goal === 'maintain'
+      ? 'Goal: maintain'
+      : `Goal: ${r.adj > 0 ? '+' : '−'}${fmtPct(Math.abs(r.adj))}%`;
+    $('#meta-line').textContent = `BMR ${fmtInt(r.bmr)} kcal · TDEE ${fmtInt(r.tdee)} kcal · ${adjText}`;
+
+    // Macro cards
+    $('#protein-g').textContent = fmtInt(r.protein.g) + ' g';
+    $('#protein-sub').textContent = `${Math.round(pP * 100)}% energy · ${fmt1(r.perKg)} g/kg`;
+    $('#fat-g').textContent = fmtInt(r.fat.g) + ' g';
+    $('#fat-sub').textContent = `${Math.round(pF * 100)}% energy`;
+    $('#carb-g').textContent = fmtInt(r.carb.g) + ' g';
+    $('#carb-sub').textContent = `${Math.round(pC * 100)}% energy`;
+
+    // Fiber & water
+    $('#fiber-g').textContent = fmtInt(r.fiberG) + ' g';
+    $('#water-l').textContent = fmt1(r.waterMl / 1000) + ' L';
+    $('#water-sub').textContent = `${state.weight.toLocaleString('en-US')} kg × ${r.waterPerKg} ml`;
+
+    // Low-calorie warning
+    const floor = state.gender === 'male' ? 1500 : 1200;
+    $('#lowcal-note').hidden = !(state.goal === 'lose' && r.calories < floor);
+
+    // Ring accessibility label
+    $('#ring-svg').setAttribute('aria-label',
+      `Daily target ${fmtInt(r.calories)} calories. Split: protein ${Math.round(pP * 100)}%, ` +
+      `fat ${Math.round(pF * 100)}%, carbs ${Math.round(pC * 100)}%.`);
+
+    // Switch views + animations
+    $('#wizard').hidden = true;
+    const res = $('#results');
+    res.hidden = false;
+    res.classList.remove('enter');
+    void res.offsetWidth; // retrigger the animation
+    res.classList.add('enter');
+
+    countUp($('#kcal-value'), r.calories, 1000);
+    renderRing([
+      { el: $('#seg-protein'), frac: pP },
+      { el: $('#seg-fat'),     frac: pF },
+      { el: $('#seg-carb'),    frac: pC }
+    ]);
+
+    window.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
+    $('#h-results').focus({ preventScroll: true });
+  }
+
+  $('#calc-btn').addEventListener('click', showResults);
+
+  // Back from results to editing (inputs are kept)
+  $('#edit-btn').addEventListener('click', () => {
+    $('#results').hidden = true;
+    $('#wizard').hidden = false;
+    goTo(1);
+  });
+
+  /* ---------------- References modal ---------------- */
+  const modal = $('#refs-modal');
+  const backdrop = $('#backdrop');
+  let lastFocus = null;
+
+  function openRefs() {
+    lastFocus = document.activeElement;
+    modal.hidden = false;
+    backdrop.hidden = false;
+    requestAnimationFrame(() => {
+      modal.classList.add('show');
+      backdrop.classList.add('show');
+    });
+    $('#close-refs').focus();
+    document.addEventListener('keydown', onEsc);
+  }
+  function closeRefs() {
+    modal.classList.remove('show');
+    backdrop.classList.remove('show');
+    document.removeEventListener('keydown', onEsc);
+    setTimeout(() => {
+      modal.hidden = true;
+      backdrop.hidden = true;
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }, RM ? 0 : 300);
+  }
+  const onEsc = e => { if (e.key === 'Escape') closeRefs(); };
+
+  $('#open-refs').addEventListener('click', openRefs);
+  $('#open-refs-2').addEventListener('click', openRefs);
+  $('#close-refs').addEventListener('click', closeRefs);
+  backdrop.addEventListener('click', closeRefs);
+
+  /* ---------------- Init ---------------- */
+  goTo(1);
+})();
+</script>
+</body>
+</html>
