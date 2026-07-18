@@ -160,6 +160,35 @@ body{
 .actions{display:flex; justify-content:center; gap:10px; margin-top:32px; flex-wrap:wrap}
 .disclaimer{color:var(--muted); font-size:12.5px; text-align:center; margin-top:26px; line-height:1.6}
 
+/* ---------- Food plan ---------- */
+.plan-card{margin-top:12px}
+.plan-card h2{font-family:var(--font-d); font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0 0 4px}
+.plan-hint{color:var(--muted); font-size:13px; margin:0 0 14px}
+.plan-note{background:var(--leaf-tint); color:var(--leaf-deep); font-size:12.5px; border-radius:10px; padding:8px 12px; margin:0 0 12px}
+.day-tabs{display:flex; gap:6px; margin-bottom:12px}
+.day-tab{
+  flex:1; position:relative; border:1.5px solid var(--line); background:var(--surface); border-radius:10px;
+  padding:8px 0; font:600 12.5px var(--font-b); color:var(--muted); cursor:pointer;
+  transition:color .2s, border-color .2s, background .2s;
+}
+.day-tab:hover{border-color:var(--line-strong)}
+.day-tab.on{background:var(--leaf); border-color:var(--leaf); color:#fff}
+.day-tab.marked::after{content:''; position:absolute; top:4px; right:4px; width:5px; height:5px; border-radius:50%; background:var(--amber)}
+.skip-chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px}
+.skip-chip{
+  border:1.5px solid var(--line); background:var(--surface); border-radius:99px; padding:7px 14px;
+  font:600 13px var(--font-b); color:var(--muted); cursor:pointer;
+  transition:color .2s, border-color .2s, background .2s;
+}
+.skip-chip.on{border-color:var(--danger); color:var(--danger); background:#FBEFEC; text-decoration:line-through}
+.day-tab:focus-visible,.skip-chip:focus-visible{outline:3px solid rgba(30,122,76,.35); outline-offset:2px}
+.food-cols{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+@media (max-width:520px){.food-cols{grid-template-columns:1fr}}
+.food-cols h3{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--muted); margin:0 0 6px}
+.food-cols ul{list-style:none; margin:0; padding:0; font-size:13.5px}
+.food-cols li{padding:5px 0; border-bottom:1px solid var(--line)}
+.food-cols li:last-child{border-bottom:0}
+
 /* Results entrance animation */
 @keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
 #results.enter .ring-wrap{animation:rise .55s ease both}
@@ -169,6 +198,7 @@ body{
 #results.enter .macro-grid .card:nth-child(3){animation:rise .5s .36s ease both}
 #results.enter .duo-grid .card:nth-child(1){animation:rise .5s .46s ease both}
 #results.enter .duo-grid .card:nth-child(2){animation:rise .5s .54s ease both}
+#results.enter .plan-card{animation:rise .5s .62s ease both}
 
 /* ---------- References (bottom sheet / modal) ---------- */
 .backdrop{
@@ -237,8 +267,8 @@ body{
   <main id="wizard">
 
     <div class="progress-row" aria-hidden="true">
-      <div class="progress" id="progress"><i></i><i></i><i></i><i></i></div>
-      <div class="progress-count" id="progress-count">1 / 4</div>
+      <div class="progress" id="progress"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="progress-count" id="progress-count">1 / 5</div>
     </div>
 
     <!-- Step 1: Sex -->
@@ -401,6 +431,59 @@ body{
       </div>
       <div class="nav">
         <button type="button" class="btn ghost" data-back>Back</button>
+      </div>
+    </section>
+
+    <!-- Step 5: Dietary preference -->
+    <section class="step" data-step="5" aria-labelledby="h-step5">
+      <h1 class="q" id="h-step5" tabindex="-1">Any dietary preference?</h1>
+      <p class="hint">Your recommended foods and weekly planner are tailored to this.</p>
+      <div class="options" role="radiogroup" aria-label="Dietary preference">
+        <label class="option option-row">
+          <input type="radio" name="diet" value="none">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">No restrictions</span>
+            <span class="option-desc">Everything is on the menu</span>
+          </span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="diet" value="halal">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Halal</span>
+            <span class="option-desc">No pork; halal-certified meat</span>
+          </span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="diet" value="kosher">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Kosher</span>
+            <span class="option-desc">No pork or shellfish; kosher-certified products</span>
+          </span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="diet" value="vegetarian">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Vegetarian</span>
+            <span class="option-desc">No meat or fish</span>
+          </span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="diet" value="pescatarian">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Pescatarian</span>
+            <span class="option-desc">Fish yes, other meat no</span>
+          </span>
+        </label>
+        <label class="option option-row">
+          <input type="radio" name="diet" value="vegan">
+          <span class="row-text" style="flex:1">
+            <span class="option-title">Vegan</span>
+            <span class="option-desc">No animal products</span>
+          </span>
+        </label>
+      </div>
+      <div class="nav">
+        <button type="button" class="btn ghost" data-back>Back</button>
         <button type="button" class="btn primary" id="calc-btn" disabled>Calculate</button>
       </div>
     </section>
@@ -477,6 +560,16 @@ body{
         <div class="macro-sub" id="water-sub"></div>
       </article>
     </div>
+
+    <!-- Food plan: diet-aware recommendations + weekly planner -->
+    <section class="card plan-card" aria-labelledby="plan-title">
+      <h2 id="plan-title">Food plan</h2>
+      <p class="plan-note" id="plan-note" hidden></p>
+      <p class="plan-hint" id="plan-hint">Pick a day and tap what you'd rather skip that day — the list adjusts.</p>
+      <div class="day-tabs" id="day-tabs" aria-label="Day of the week"></div>
+      <div class="skip-chips" id="skip-chips" aria-label="Foods to skip on this day"></div>
+      <div class="food-cols" id="food-cols"></div>
+    </section>
 
     <div class="actions">
       <button type="button" class="btn ghost" id="edit-btn">Edit details</button>
@@ -568,8 +661,41 @@ body{
   };
   const GOAL_LABEL = { lose: 'Lose weight', maintain: 'Maintain weight', gain: 'Build muscle' };
 
-  const state = { gender: null, age: null, height: null, weight: null, goal: null, activity: null };
-  const TOTAL = 4;
+  /* ---------------- Data: diets & foods ---------------- */
+  const DIET = {
+    none:        { exclude: [], label: 'No restrictions' },
+    halal:       { exclude: ['pork'], label: 'Halal', note: 'Choose halal-certified meat.' },
+    kosher:      { exclude: ['pork', 'shellfish'], label: 'Kosher', note: 'Choose kosher-certified products and keep meat and dairy separate.' },
+    vegetarian:  { exclude: ['meat', 'pork', 'fish', 'shellfish'], label: 'Vegetarian' },
+    pescatarian: { exclude: ['meat', 'pork'], label: 'Pescatarian' },
+    vegan:       { exclude: ['meat', 'pork', 'fish', 'shellfish', 'dairy', 'egg'], label: 'Vegan' }
+  };
+  // Food entry = [name, ...tags]; a diet or day-skip removes foods by tag
+  const FOODS = {
+    protein: [
+      ['Chicken breast', 'meat'], ['Turkey', 'meat'], ['Lean beef', 'meat'], ['Pork (lean cuts)', 'pork'],
+      ['Salmon', 'fish'], ['Tuna', 'fish'], ['Shrimp', 'shellfish'], ['Eggs', 'egg'],
+      ['Greek yogurt', 'dairy'], ['Cottage cheese', 'dairy'], ['Tofu & tempeh'], ['Lentils & chickpeas']
+    ],
+    carb: [
+      ['Oats'], ['Brown rice'], ['Quinoa'], ['Whole-grain bread'],
+      ['Sweet potato'], ['Bulgur'], ['Bananas'], ['Berries']
+    ],
+    fat: [
+      ['Olive oil'], ['Avocado'], ['Almonds'], ['Walnuts'],
+      ['Peanut butter'], ['Chia & flax seeds'], ['Cheese', 'dairy'], ['Butter', 'dairy']
+    ]
+  };
+  const SKIPS = [
+    { id: 'meat',  label: 'No meat',  tags: ['meat', 'pork'] },
+    { id: 'fish',  label: 'No fish',  tags: ['fish', 'shellfish'] },
+    { id: 'dairy', label: 'No dairy', tags: ['dairy'] },
+    { id: 'egg',   label: 'No eggs',  tags: ['egg'] }
+  ];
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const state = { gender: null, age: null, height: null, weight: null, goal: null, activity: null, diet: null };
+  const TOTAL = 5;
   let step = 1;
 
   /* ---------------- Formatting (en-US) ---------------- */
@@ -618,11 +744,15 @@ body{
     };
   }
 
-  // ponytail: inline self-check — logs a console error if the math ever regresses
+  // A food is allowed unless one of its tags is excluded (entry = [name, ...tags])
+  const allowed = (list, excluded) => list.filter(f => !f.slice(1).some(t => excluded.includes(t)));
+
+  // ponytail: inline self-checks — log a console error if the logic ever regresses
   console.assert(
     Math.round(calculate({ gender: 'male', age: 30, height: 180, weight: 80, goal: 'maintain', activity: 'sedentary' }).tdee) === 2136,
     'calculate() self-check failed'
   );
+  console.assert(allowed(FOODS.protein, DIET.vegan.exclude).every(f => f.length === 1), 'diet filter self-check failed');
 
   /* ---------------- Wizard navigation ---------------- */
   const steps = $$('.step');
@@ -688,11 +818,20 @@ body{
     });
   });
 
-  // Step 4 — activity: enable the Calculate button
+  // Step 4 — activity: auto-advance on selection
   $$('input[name="activity"]').forEach(inp => {
     inp.addEventListener('change', () => {
       state.activity = inp.value;
       syncSelected('activity');
+      setTimeout(() => goTo(5), 240);
+    });
+  });
+
+  // Step 5 — diet: enable the Calculate button
+  $$('input[name="diet"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      state.diet = inp.value;
+      syncSelected('diet');
       $('#calc-btn').disabled = false;
     });
   });
@@ -745,6 +884,58 @@ body{
     requestAnimationFrame(tick);
   }
 
+  /* ---------------- Food plan (diet + weekly planner) ---------------- */
+  // ponytail: only the per-day skips persist (localStorage); the rest is session-only by design
+  let daySkips = {};
+  try { daySkips = JSON.parse(localStorage.getItem('balance-week')) || {}; } catch (e) {}
+  let day = (new Date().getDay() + 6) % 7; // Mon = 0
+  const saveWeek = () => { try { localStorage.setItem('balance-week', JSON.stringify(daySkips)); } catch (e) {} };
+
+  function renderPlan() {
+    const d = DIET[state.diet];
+    const note = $('#plan-note');
+    note.hidden = !d.note;
+    note.textContent = d.note || '';
+
+    // Only offer day-skips the diet doesn't already exclude
+    const chips = SKIPS.filter(sk => sk.tags.some(t => !d.exclude.includes(t)));
+    const skips = daySkips[day] || [];
+    const excluded = d.exclude.concat(...chips.filter(sk => skips.includes(sk.id)).map(sk => sk.tags));
+
+    $('#plan-hint').hidden = $('#day-tabs').hidden = $('#skip-chips').hidden = !chips.length;
+
+    $('#day-tabs').innerHTML = DAYS.map((nm, i) =>
+      `<button type="button" class="day-tab${i === day ? ' on' : ''}${(daySkips[i] || []).length ? ' marked' : ''}" data-day="${i}" aria-pressed="${i === day}">${nm}</button>`).join('');
+
+    $('#skip-chips').innerHTML = chips.map(sk =>
+      `<button type="button" class="skip-chip${skips.includes(sk.id) ? ' on' : ''}" data-skip="${sk.id}" aria-pressed="${skips.includes(sk.id)}">${sk.label}</button>`).join('');
+
+    const col = (title, color, list) =>
+      `<div><h3><span class="dot" style="background:var(${color})"></span>${title}</h3><ul>` +
+      allowed(list, excluded).map(f => `<li>${f[0]}</li>`).join('') + '</ul></div>';
+    $('#food-cols').innerHTML =
+      col('Protein', '--leaf', FOODS.protein) + col('Carbs', '--slate', FOODS.carb) + col('Fats', '--amber', FOODS.fat);
+  }
+
+  $('#day-tabs').addEventListener('click', e => {
+    const b = e.target.closest('.day-tab');
+    if (!b) return;
+    day = Number(b.dataset.day);
+    renderPlan();
+    $(`[data-day="${day}"]`).focus();
+  });
+  $('#skip-chips').addEventListener('click', e => {
+    const b = e.target.closest('.skip-chip');
+    if (!b) return;
+    const list = daySkips[day] || (daySkips[day] = []);
+    const i = list.indexOf(b.dataset.skip);
+    if (i < 0) list.push(b.dataset.skip); else list.splice(i, 1);
+    saveWeek();
+    renderPlan();
+    const again = $(`[data-skip="${b.dataset.skip}"]`);
+    if (again) again.focus();
+  });
+
   /* ---------------- Show results ---------------- */
   function showResults() {
     const r = calculate(state);
@@ -759,7 +950,8 @@ body{
       `${state.height} cm`,
       `${state.weight.toLocaleString('en-US')} kg`,
       ACTIVITY[state.activity].label,
-      GOAL_LABEL[state.goal]
+      GOAL_LABEL[state.goal],
+      DIET[state.diet].label
     ].join(' · ');
 
     // Meta line: BMR · TDEE · goal adjustment
@@ -789,6 +981,9 @@ body{
     $('#ring-svg').setAttribute('aria-label',
       `Daily target ${fmtInt(r.calories)} calories. Split: protein ${Math.round(pP * 100)}%, ` +
       `fat ${Math.round(pF * 100)}%, carbs ${Math.round(pC * 100)}%.`);
+
+    // Food plan card
+    renderPlan();
 
     // Switch views + animations
     $('#wizard').hidden = true;
