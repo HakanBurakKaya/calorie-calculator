@@ -241,6 +241,21 @@ body{
 .ref-link:hover{text-decoration:underline}
 .sheet-note{color:var(--muted); font-size:12.5px; margin-top:18px; line-height:1.6}
 
+/* ---------- Print (Download plan) ---------- */
+#print-sheet{display:none}
+@media print{
+  .app,.backdrop,.sheet{display:none !important}
+  #print-sheet{display:block; font:12px/1.5 var(--font-b); color:#000}
+}
+#print-sheet h1{font:700 20px var(--font-d); margin:0 0 2px}
+#print-sheet h2{font:600 14px var(--font-d); margin:16px 0 6px}
+#print-sheet .p-sub{color:#444; margin:0 0 6px}
+#print-sheet table{width:100%; border-collapse:collapse}
+#print-sheet th,#print-sheet td{border:1px solid #bbb; padding:5px 8px; text-align:left; vertical-align:top; font-size:11.5px}
+#print-sheet th{background:#f2f2f2}
+#print-sheet tbody th{width:100px}
+#print-sheet .p-note{color:#444; margin:8px 0 0}
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important; transition:none !important}
 }
@@ -572,6 +587,12 @@ body{
     </section>
 
     <div class="actions">
+      <button type="button" class="btn primary" id="download-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download plan
+      </button>
       <button type="button" class="btn ghost" id="edit-btn">Edit details</button>
       <button type="button" class="btn link" id="open-refs-2">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -642,6 +663,9 @@ body{
     condition or special dietary needs, consult a health professional.
   </p>
 </div>
+
+<!-- Print-only sheet, filled by the Download plan button -->
+<div id="print-sheet"></div>
 
 <script>
 (() => {
@@ -883,6 +907,10 @@ body{
   let day = (new Date().getDay() + 6) % 7; // Mon = 0
   const saveWeek = () => { try { localStorage.setItem('balance-week', JSON.stringify(daySkips)); } catch (e) {} };
 
+  // Skips stored for a day that still matter under this diet, and the resulting exclusions
+  const daySkipsFor = (d, i) => SKIPS.filter(sk => (daySkips[i] || []).includes(sk.id) && sk.tags.some(t => !d.exclude.includes(t)));
+  const dayExcluded = (d, i) => d.exclude.concat(...daySkipsFor(d, i).map(sk => sk.tags));
+
   function renderPlan() {
     const d = DIET[state.diet];
     const note = $('#plan-note');
@@ -892,7 +920,7 @@ body{
     // Only offer day-skips the diet doesn't already exclude
     const chips = SKIPS.filter(sk => sk.tags.some(t => !d.exclude.includes(t)));
     const skips = daySkips[day] || [];
-    const excluded = d.exclude.concat(...chips.filter(sk => skips.includes(sk.id)).map(sk => sk.tags));
+    const excluded = dayExcluded(d, day);
 
     $('#plan-hint').hidden = $('#day-tabs').hidden = $('#skip-chips').hidden = !chips.length;
 
@@ -927,6 +955,58 @@ body{
     const again = $(`[data-skip="${b.dataset.skip}"]`);
     if (again) again.focus();
   });
+
+  /* ---------------- Download plan (print-to-PDF, no dependencies) ---------------- */
+  function downloadPlan() {
+    const d = DIET[state.diet];
+    const r = calculate(state);
+    const names = list => list.map(f => f[0]).join(', ');
+    const base = cat => allowed(FOODS[cat], d.exclude);
+    const CAT_LABEL = { protein: 'Protein', carb: 'Carbs', fat: 'Fats' };
+
+    const weekRows = DAYS.map((nm, i) => {
+      const skips = daySkipsFor(d, i);
+      if (!skips.length) return `<tr><td>${nm}</td><td>—</td><td>Standard list</td></tr>`;
+      const ex = dayExcluded(d, i);
+      const changed = Object.keys(CAT_LABEL)
+        .filter(cat => allowed(FOODS[cat], ex).length !== base(cat).length)
+        .map(cat => `<strong>${CAT_LABEL[cat]}:</strong> ${names(allowed(FOODS[cat], ex))}`)
+        .join('<br>');
+      return `<tr><td>${nm}</td><td>${skips.map(sk => sk.label).join(', ')}</td><td>${changed}</td></tr>`;
+    }).join('');
+
+    $('#print-sheet').innerHTML = `
+      <h1>Balance — Daily targets</h1>
+      <p class="p-sub">${$('#summary-line').textContent} · ${new Date().toLocaleDateString('en-US')}</p>
+      <h2>Calorie &amp; macro targets</h2>
+      <table><tbody>
+        <tr><th>Calories</th><td>${fmtInt(r.calories)} kcal/day (BMR ${fmtInt(r.bmr)} · TDEE ${fmtInt(r.tdee)})</td></tr>
+        <tr><th>Protein</th><td>${fmtInt(r.protein.g)} g (${fmt1(r.perKg)} g/kg)</td></tr>
+        <tr><th>Fat</th><td>${fmtInt(r.fat.g)} g</td></tr>
+        <tr><th>Carbs</th><td>${fmtInt(r.carb.g)} g</td></tr>
+        <tr><th>Fiber</th><td>${fmtInt(r.fiberG)} g</td></tr>
+        <tr><th>Water</th><td>${fmt1(r.waterMl / 1000)} L</td></tr>
+      </tbody></table>
+      <h2>Recommended foods${state.diet === 'none' ? '' : ' — ' + d.label}</h2>
+      <table><tbody>
+        <tr><th>Protein</th><td>${names(base('protein'))}</td></tr>
+        <tr><th>Carbs</th><td>${names(base('carb'))}</td></tr>
+        <tr><th>Fats</th><td>${names(base('fat'))}</td></tr>
+      </tbody></table>
+      ${d.note ? `<p class="p-note">${d.note}</p>` : ''}
+      <h2>Weekly plan</h2>
+      <table>
+        <thead><tr><th>Day</th><th>Skipping</th><th>Adjusted foods</th></tr></thead>
+        <tbody>${weekRows}</tbody>
+      </table>
+      <p class="p-note">Estimates based on scientific equations for healthy adults; not a substitute for medical or dietetic advice.</p>`;
+
+    const t = document.title;
+    document.title = 'Balance - My Plan'; // becomes the suggested PDF filename
+    window.print();
+    document.title = t;
+  }
+  $('#download-btn').addEventListener('click', downloadPlan);
 
   /* ---------------- Show results ---------------- */
   function showResults() {
